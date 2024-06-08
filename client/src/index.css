@@ -1,0 +1,8 @@
+body {
+  margin: 0%;
+  background-image: url('/images/circle.svg');
+  background-repeat: repeat;
+  color: black;
+  font-family: 'Source Code Pro', monospace;
+}
+
