@@ -14,62 +14,64 @@ export const TranslateBox = () => {
     const [history, setHistory] = useState([]);
 
     const handleSelectChange = ({ target: { value, id } }) => {
-        id === "source" && setSource(value);
-        id === "target" && setTarget(value);
-    }
+        if (id === "source") setSource(value);
+        if (id === "target") setTarget(value);
+    };
 
     const handleGetRequest = async () => {
         if (q.length < 1) {
             setOutput("");
-            return false;
+            return;
         }
-        if (source === "" || target === "") {
-            return error("Please select language");
+        if (!source || !target) {
+            return error("Please select both source and target languages.");
         }
         try {
-            let res = await axios.post("", { q, source, target, format: "text" });
+            const res = await axios.post("http://localhost:5000/api/translate", { q, source, target });
             const translatedText = res.data.translatedText;
             setOutput(translatedText);
 
+            // Save translation history
             await axios.post("http://localhost:5000/api/save-translation", { q, source, target, translatedText });
+            fetchHistory(); // Update history after saving new translation
         } catch (err) {
-            console.log(err);
+            console.error("Error during translation:", err);
+            error("Translation failed. Please try again.");
         }
-    }
+    };
 
     const copyToClipboard = (text) => {
         copy(text);
-        success("Copied to clipboard!")
-    }
+        success("Copied to clipboard!");
+    };
 
     const resetText = () => {
-        if (q === "" && output === "") {
-            error("Textbox is already empty!")
-        } else {
-            success("Text removed!")
-            setQ("");
-            setOutput("");
+        if (!q && !output) {
+            return error("Textbox is already empty!");
         }
-    }
+        success("Text removed!");
+        setQ("");
+        setOutput("");
+    };
 
     const fetchHistory = async () => {
         try {
             const res = await axios.get("http://localhost:5000/api/history");
             setHistory(res.data);
         } catch (err) {
-            console.log(err);
+            console.error("Error fetching history:", err);
         }
     };
 
     useEffect(() => {
-        let timerID = setTimeout(() => {
+        const timerID = setTimeout(() => {
             handleGetRequest();
         }, 1000);
 
         return () => {
             clearTimeout(timerID);
-        }
-    }, [q]);
+        };
+    }, [q, source, target]);
 
     useEffect(() => {
         fetchHistory();
@@ -79,25 +81,30 @@ export const TranslateBox = () => {
         <>
             <div className="mainBox">
                 <div>
-                    <SelectBox id={'source'} select={handleSelectChange} />
+                    <SelectBox id="source" select={handleSelectChange} />
                     <div className="box">
-                        <textarea onChange={(e) => { setQ(e.target.value) }} value={q} className="outputResult"></textarea>
+                        <textarea
+                            onChange={(e) => setQ(e.target.value)}
+                            value={q}
+                            className="outputResult"
+                            placeholder="Enter text to translate..."
+                        />
                     </div>
                     <div className="iconBox">
                         <p>{q.length}/250</p>
-                        <AiFillCopy onClick={() => { copyToClipboard(q) }} className="icon" />
+                        <AiFillCopy onClick={() => copyToClipboard(q)} className="icon" />
                         <MdClear onClick={resetText} className="icon" />
                     </div>
                 </div>
 
                 <div>
-                    <SelectBox id={'target'} select={handleSelectChange} />
+                    <SelectBox id="target" select={handleSelectChange} />
                     <div className="outputResult box">
                         <p id="output">{output}</p>
                     </div>
                     <div className="iconBox">
                         <p>{output.length}/250</p>
-                        <AiFillCopy onClick={() => { copyToClipboard(output) }} className="icon" />
+                        <AiFillCopy onClick={() => copyToClipboard(output)} className="icon" />
                     </div>
                 </div>
             </div>
@@ -115,7 +122,7 @@ export const TranslateBox = () => {
             </div>
 
             <div className="tagLine">
-                <p id="madeByjeyan">Made with ❤️ by <b>GURUDEV D J</b> AIML </p>
+                <p id="madeByjeyan">Made with ❤️ by <b>JEYACHANDRAN J</b> AIML</p>
             </div>
         </>
     );
